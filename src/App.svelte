@@ -1,31 +1,44 @@
 <script>
-  import { onMount } from "svelte";
   import Botones from "./components/Botones.svelte";
   import rawData from "./data/data.js";
 
-  onMount(() => {
+  window.addEventListener("DOMContentLoaded", (event) => {
     function updateIframeHeight() {
-      const height = Math.ceil(document.body.scrollHeight);
-      const width = Math.ceil(document.body.scrollWidth);
+      const el = document.documentElement;
+      const rect = el.getBoundingClientRect();
+      const styles = window.getComputedStyle(el);
+      const margin =
+        parseFloat(styles.marginTop) + parseFloat(styles.marginBottom);
+      const height = Math.ceil(rect.height + margin);
+
       window.parent.postMessage(
-        { type: "resize-iframe", value: height, width },
+        {
+          type: "resize-iframe",
+          value: height,
+        },
         "*",
       );
     }
-
     updateIframeHeight();
 
     if (window.ResizeObserver) {
-      new ResizeObserver(() => updateIframeHeight()).observe(
-        document.documentElement,
-      );
+      new ResizeObserver(() => {
+        updateIframeHeight();
+      }).observe(document.documentElement);
     } else {
+      window.addEventListener("load", updateIframeHeight);
       window.addEventListener("resize", updateIframeHeight);
     }
 
-    window.addEventListener("message", (event) => {
-      if (event.data.type === "request-resize") updateIframeHeight();
-    });
+    window.addEventListener(
+      "message",
+      (event) => {
+        if (event.data.type === "request-resize") {
+          updateIframeHeight();
+        }
+      },
+      false,
+    );
   });
 
   const years = Array.from({ length: 2024 - 2007 + 1 }, (_, i) =>
